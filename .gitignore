@@ -1,0 +1,8 @@
+.DS_Store
+
+backend/dist/*
+backend/node_modules/*
+backend/yarn.lock
+
+frontend/node_modules/*
+frontend/yarn.lock
