@@ -8,3 +8,6 @@ To start the code, look at the README.md's under backend and frontend.
 
 ## Support
 If you have any questions, or other frameworks/languages you'd like help with implementing this on, feel free to create an issue. I'll see if I can help out.
+
+## License
+Uses MIT license. Do what you want with the code
