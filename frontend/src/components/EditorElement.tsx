@@ -4,9 +4,11 @@ import CodeMirror from '@uiw/react-codemirror';
 import { langs } from '@uiw/codemirror-extensions-langs';
 import { basicSetup } from '@uiw/codemirror-extensions-basic-setup';
 import { indentUnit } from '@codemirror/language'
-import {Update, receiveUpdates, sendableUpdates, collab, getSyncedVersion} from "@codemirror/collab"
-import {ChangeSet, EditorState, Text} from "@codemirror/state"
-import {EditorView, ViewPlugin, ViewUpdate} from "@codemirror/view"
+import { Update, receiveUpdates, sendableUpdates, collab, getSyncedVersion, getClientID } from "@codemirror/collab"
+import { ChangeSet, EditorState, StateEffect, Text } from "@codemirror/state"
+import { EditorView, ViewPlugin, ViewUpdate } from "@codemirror/view"
+
+import { cursor, Cursors, addCursor, removeCursor, cursorExtension } from "../utils/cursors";
 
 import { io } from "socket.io-client";
 
@@ -64,7 +66,8 @@ class EditorElement extends React.Component<{}, state> {
 		// Strip off transaction data
 		let updates = fullUpdates.map(u => ({
 			clientID: u.clientID,
-			changes: u.changes.toJSON()
+			changes: u.changes.toJSON(),
+			effects: u.effects
 		}))
 
 		return new Promise(function(resolve) {
@@ -85,10 +88,34 @@ class EditorElement extends React.Component<{}, state> {
 			socket.once('pullUpdateResponse', function(updates: any) {
 				resolve(JSON.parse(updates));
 			});
-		}).then((updates: any) => updates.map((u: any) => ({
-			changes: ChangeSet.fromJSON(u.changes),
-			clientID: u.clientID
-		})));
+		}).then((updates: any) => updates.map((u: any) => {
+			if (u.effects[0]) {
+				let effects: StateEffect<any>[] = [];
+
+				u.effects.forEach((effect: StateEffect<any>) => {
+					if (effect.value?.id) {
+						let cursor: cursor = {
+							id: effect.value.id,
+							from: effect.value.from,
+							to: effect.value.to
+						}
+
+						effects.push(addCursor.of(cursor))
+					}
+				})
+
+				return {
+					changes: ChangeSet.fromJSON(u.changes),
+					clientID: u.clientID,
+					effects
+				}
+			}
+			
+			return {
+				changes: ChangeSet.fromJSON(u.changes),
+				clientID: u.clientID
+			}
+		}));
 	}
 
 	getDocument(): Promise<{version: number, doc: Text}> {
@@ -114,7 +141,7 @@ class EditorElement extends React.Component<{}, state> {
 			constructor(private view: EditorView) { this.pull() }
 
 			update(update: ViewUpdate) {
-				if (update.docChanged) this.push()
+				if (update.docChanged || update.transactions.length) this.push()
 			}
 
 			async push() {
@@ -140,7 +167,21 @@ class EditorElement extends React.Component<{}, state> {
 
 			destroy() { this.done = true }
 		})
-		return [collab({startVersion}), plugin]
+		return [
+			collab(
+				{
+					startVersion,
+					sharedEffects: tr => {
+						const effects = tr.effects.filter(e => {
+							return e.is(addCursor);
+						})
+
+						return effects;
+					}
+				}
+			),
+			plugin
+		]
 	}
 
 
@@ -157,7 +198,23 @@ class EditorElement extends React.Component<{}, state> {
 							indentUnit.of("\t"), 
 							basicSetup(), 
 							langs.c(),
-							this.peerExtension(this.state.version)
+							this.peerExtension(this.state.version),
+							EditorView.updateListener.of(update => {
+								update.transactions.forEach(e => { 
+									if (e.selection) {
+										let cursor: cursor = {
+											id: getClientID(update.state),
+											from: e.selection.ranges[0].from,
+											to: e.selection.ranges[0].to
+										}
+
+										update.view.dispatch({
+											effects: addCursor.of(cursor)
+										})
+									}
+								})
+							}),
+							cursorExtension()
 						]}
 						value={this.state.doc}
 					/>

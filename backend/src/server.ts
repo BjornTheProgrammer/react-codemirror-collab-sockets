@@ -47,7 +47,7 @@ io.on('connection', (socket: Socket) =>{
 					// Convert the JSON representation to an actual ChangeSet
 					// instance
 					let changes = ChangeSet.fromJSON(update.changes)
-					updates.push({changes, clientID: update.clientID})
+					updates.push({changes, clientID: update.clientID, effects: update.effects})
 					doc = changes.apply(doc)
 				}
 				socket.emit('pushUpdateResponse', true);
