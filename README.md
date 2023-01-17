@@ -6,5 +6,11 @@ It is built with React and Typescript, but those can be easily striped out.
 
 To start the code, look at the README.md's under backend and frontend.
 
+## Implementing Shared Effects and Cursors
+I have added shared cursors and highlighting which can be viewed in the `cursors` branch, it makes one change in the backend, and and few changes in the frontend to work. It is a great example of how to implement SharedEffects if that is what you want to do.
+
+![cursors-demonstration](https://user-images.githubusercontent.com/75190918/212936222-0ee13f31-d8a3-4894-913a-201a90a82b20.gif)
+
+
 ## Support
 If you have any questions, or other frameworks/languages you'd like help with implementing this on, feel free to create an issue. I'll see if I can help out.
