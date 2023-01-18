@@ -1,4 +1,4 @@
-import { EditorView, ViewPlugin, Decoration, DecorationSet, WidgetType } from "@codemirror/view"
+import { EditorView, Decoration, DecorationSet, WidgetType } from "@codemirror/view"
 import { StateField, StateEffect } from "@codemirror/state"
 
 export interface cursor {
