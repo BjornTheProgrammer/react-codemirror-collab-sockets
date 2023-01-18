@@ -180,5 +180,23 @@ const cursorBaseTheme = EditorView.baseTheme({
 })
 
 export function cursorExtension(id: string = "") {
-	return [cursorField, cursorBaseTheme];
+	return [
+		cursorField,
+		cursorBaseTheme,
+		EditorView.updateListener.of(update => {
+			update.transactions.forEach(e => { 
+				if (e.selection) {
+					let cursor: cursor = {
+						id,
+						from: e.selection.ranges[0].from,
+						to: e.selection.ranges[0].to
+					}
+
+					update.view.dispatch({
+						effects: addCursor.of(cursor)
+					})
+				}
+			})
+		}),
+	];
 }

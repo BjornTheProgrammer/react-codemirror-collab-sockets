@@ -91,22 +91,7 @@ class EditorElement extends Component<props, state> {
 						basicSetup(), 
 						langs.c(),
 						peerExtension(this.props.socket, this.state.documentName, this.state.version, this.state.username),
-						EditorView.updateListener.of(update => {
-							update.transactions.forEach(e => { 
-								if (e.selection) {
-									let cursor: cursor = {
-										id: getClientID(update.state),
-										from: e.selection.ranges[0].from,
-										to: e.selection.ranges[0].to
-									}
-
-									update.view.dispatch({
-										effects: addCursor.of(cursor)
-									})
-								}
-							})
-						}),
-						cursorExtension()
+						cursorExtension(this.state.username)
 					]}
 					value={this.state.doc}
 				/>
