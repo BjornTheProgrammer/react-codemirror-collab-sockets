@@ -12,7 +12,7 @@ I have added shared cursors and highlighting which can be viewed in the `cursors
 ![cursors-demonstration](https://user-images.githubusercontent.com/75190918/212936222-0ee13f31-d8a3-4894-913a-201a90a82b20.gif)
 
 ## Multiple Documents hosted on Server
-I also added the capability for multiple documents, which changes the fronted slightly to create a new key for the Codemirror component (otherwise the state creates an issue when not at a clean state), and changes the backend to allow editing multiple different documents. You can even read files and make documents for users to edit (I've done so already see [Pico-Online](https://github.com/BERDPhone/Pico-Online)).
+I also added the capability for multiple documents in the `multi-docs`, which changes the fronted slightly to create a new key for the Codemirror component (otherwise the state creates an issue when not at a clean state), and changes the backend to allow editing multiple different documents. You can even read files and make documents for users to edit (I've done so already see [Pico-Online](https://github.com/BERDPhone/Pico-Online)).
 
 ![ezgif com-gif-maker copy](https://user-images.githubusercontent.com/75190918/213265954-b6b824d7-489a-4fd3-97be-cfb53534d4f8.gif)
 
