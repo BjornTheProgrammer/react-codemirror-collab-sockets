@@ -4,226 +4,117 @@ import CodeMirror from '@uiw/react-codemirror';
 import { langs } from '@uiw/codemirror-extensions-langs';
 import { basicSetup } from '@uiw/codemirror-extensions-basic-setup';
 import { indentUnit } from '@codemirror/language'
-import { Update, receiveUpdates, sendableUpdates, collab, getSyncedVersion, getClientID } from "@codemirror/collab"
-import { ChangeSet, EditorState, StateEffect, Text } from "@codemirror/state"
-import { EditorView, ViewPlugin, ViewUpdate } from "@codemirror/view"
+import { getClientID } from "@codemirror/collab"
+import { EditorView } from "@codemirror/view"
 
-import { cursor, Cursors, addCursor, removeCursor, cursorExtension } from "../utils/cursors";
-
-import { io } from "socket.io-client";
-
-const socket = io("http://localhost:8000", {
-	path: "/api"
-});
+import { cursor, addCursor, cursorExtension } from "../utils/cursors";
+import { generateName } from "../utils/usernames"
+import { getDocument, peerExtension } from "../utils/collab"
+import { Socket } from "socket.io-client";
 
 type state = {
 	connected: boolean,
 	version: number | null,
-	doc: String | null
+	documentName: string,
+	doc: null | String
 }
 
-class EditorElement extends React.Component<{}, state> {
+type props = {
+	socket: Socket
+}
+
+let editorKey = 0;
+
+class EditorElement extends React.Component<props, state> {
 
 	state = {
 		connected: false,
 		version: null,
-		doc: null
+		doc: null,
+		documentName: '',
+		username: generateName()
 	}
 
-	componentDidMount(): void {
-		this.getDocument().then(({version, doc}) => {
-			this.setState({
-				version,
-				doc: doc.toString()
-			});
-		});
+	async componentDidMount() {
+		const { version, doc } = await getDocument(this.props.socket, this.state.documentName);
 
-		socket.on('connect', () => {
+		this.setState({
+			version,
+			doc: doc.toString()
+		})
+
+		this.props.socket.on('connect', () => {
 			this.setState({
 				connected: true
 			});
 		});
 
-		socket.on('disconnect', () => {
+		this.props.socket.on('disconnect', () => {
 			this.setState({ 
 				connected: false
 			});
 		});
+
+		this.props.socket.on('display', async (documentName) => {
+			const { version, doc } = await getDocument(this.props.socket, documentName)
+
+			this.setState({
+				version,
+				doc: doc.toString(),
+				documentName
+			})
+		});
 	}
 
 	componentWillUnmount(): void {
-		socket.off('connect');
-		socket.off('disconnect');
-		socket.off('pullUpdateResponse');
-		socket.off('pushUpdateResponse');
-		socket.off('getDocumentResponse');
-	}
-
-	pushUpdates(
-		version: number,
-		fullUpdates: readonly Update[]
-	): Promise<boolean> {
-		// Strip off transaction data
-		let updates = fullUpdates.map(u => ({
-			clientID: u.clientID,
-			changes: u.changes.toJSON(),
-			effects: u.effects
-		}))
-
-		return new Promise(function(resolve) {
-			socket.emit('pushUpdates', version, JSON.stringify(updates));
-
-			socket.once('pushUpdateResponse', function(status: boolean) {
-				resolve(status);
-			});
-		});
-	}
-
-	pullUpdates(
-		version: number
-	): Promise<readonly Update[]> {
-		return new Promise(function(resolve) {
-			socket.emit('pullUpdates', version);
-
-			socket.once('pullUpdateResponse', function(updates: any) {
-				resolve(JSON.parse(updates));
-			});
-		}).then((updates: any) => updates.map((u: any) => {
-			if (u.effects[0]) {
-				let effects: StateEffect<any>[] = [];
-
-				u.effects.forEach((effect: StateEffect<any>) => {
-					if (effect.value?.id) {
-						let cursor: cursor = {
-							id: effect.value.id,
-							from: effect.value.from,
-							to: effect.value.to
-						}
-
-						effects.push(addCursor.of(cursor))
-					}
-				})
-
-				return {
-					changes: ChangeSet.fromJSON(u.changes),
-					clientID: u.clientID,
-					effects
-				}
-			}
-			
-			return {
-				changes: ChangeSet.fromJSON(u.changes),
-				clientID: u.clientID
-			}
-		}));
-	}
-
-	getDocument(): Promise<{version: number, doc: Text}> {
-		return new Promise(function(resolve) {
-			socket.emit('getDocument');
-
-			socket.once('getDocumentResponse', function(version: number, doc: string) {
-				resolve({
-					version,
-					doc: Text.of(doc.split("\n"))
-				});
-			});
-		});
-	}
-
-	peerExtension(startVersion: number) {
-		let self = this;
-
-		let plugin = ViewPlugin.fromClass(class {
-			private pushing = false
-			private done = false
-
-			constructor(private view: EditorView) { this.pull() }
-
-			update(update: ViewUpdate) {
-				if (update.docChanged || update.transactions.length) this.push()
-			}
-
-			async push() {
-				let updates = sendableUpdates(this.view.state)
-				if (this.pushing || !updates.length) return
-				this.pushing = true
-				let version = getSyncedVersion(this.view.state)
-				let success = await self.pushUpdates(version, updates)
-				this.pushing = false
-				// Regardless of whether the push failed or new updates came in
-				// while it was running, try again if there's updates remaining
-				if (sendableUpdates(this.view.state).length)
-					setTimeout(() => this.push(), 100)
-			}
-
-			async pull() {
-				while (!this.done) {
-					let version = getSyncedVersion(this.view.state)
-					let updates = await self.pullUpdates(version)
-					this.view.dispatch(receiveUpdates(this.view.state, updates))
-				}
-			}
-
-			destroy() { this.done = true }
-		})
-		return [
-			collab(
-				{
-					startVersion,
-					sharedEffects: tr => {
-						const effects = tr.effects.filter(e => {
-							return e.is(addCursor);
-						})
-
-						return effects;
-					}
-				}
-			),
-			plugin
-		]
+		this.props.socket.off('connect');
+		this.props.socket.off('disconnect');
+		this.props.socket.off('display');
+		this.props.socket.off('pullUpdateResponse');
+		this.props.socket.off('pushUpdateResponse');
+		this.props.socket.off('getDocumentResponse');
 	}
 
 
 	render() {
+		editorKey++;
+
 		if (this.state.version !== null && this.state.doc !== null) {
 			return (
-				<>
-					<CodeMirror
-						className="flex-1 overflow-scroll"
-						height="100%"
-						basicSetup={false}
-						id="codeEditor"
-						extensions={[
-							indentUnit.of("\t"), 
-							basicSetup(), 
-							langs.c(),
-							this.peerExtension(this.state.version),
-							EditorView.updateListener.of(update => {
-								update.transactions.forEach(e => { 
-									if (e.selection) {
-										let cursor: cursor = {
-											id: getClientID(update.state),
-											from: e.selection.ranges[0].from,
-											to: e.selection.ranges[0].to
-										}
-
-										update.view.dispatch({
-											effects: addCursor.of(cursor)
-										})
+				<CodeMirror
+					key={editorKey}
+					className="flex-1 overflow-scroll"
+					height="100%"
+					basicSetup={false}
+					extensions={[
+						indentUnit.of("\t"),
+						basicSetup(), 
+						langs.c(),
+						peerExtension(this.props.socket, this.state.documentName, this.state.version, this.state.username),
+						EditorView.updateListener.of(update => {
+							update.transactions.forEach(e => { 
+								if (e.selection) {
+									let cursor: cursor = {
+										id: getClientID(update.state),
+										from: e.selection.ranges[0].from,
+										to: e.selection.ranges[0].to
 									}
-								})
-							}),
-							cursorExtension()
-						]}
-						value={this.state.doc}
-					/>
-				</>
+
+									update.view.dispatch({
+										effects: addCursor.of(cursor)
+									})
+								}
+							})
+						}),
+						cursorExtension()
+					]}
+					value={this.state.doc}
+				/>
 			);
 		} else {
 			return (
-				<span>loading...</span>
-			)
+				<p>loading...</p>
+			);
 		}
 	}
 }
