@@ -77,6 +77,13 @@ const cursorField = StateField.define<DecorationSet>({
 					return true;
 				}
 			})
+		} else if (e.is(removeCursor)) {
+			cursorTransacions = cursorTransacions.update({
+				filter: (from, to, value ) => {
+					if (value?.spec?.id == e.value.id) return false;
+					return true;
+				}
+			})
 		}
 
 		return cursorTransacions
@@ -180,5 +187,24 @@ const cursorBaseTheme = EditorView.baseTheme({
 })
 
 export function cursorExtension(id: string = "") {
-	return [cursorField, cursorBaseTheme];
+	return [
+		cursorField,
+		cursorBaseTheme,
+		EditorView.updateListener.of(update => {
+			console.log(update)
+			update.transactions.forEach(e => { 
+				if (e.selection) {
+					let cursor: cursor = {
+						id,
+						from: e.selection.ranges[0].from,
+						to: e.selection.ranges[0].to
+					}
+
+					update.view.dispatch({
+						effects: addCursor.of(cursor)
+					})
+				}
+			})
+		})
+	];
 }

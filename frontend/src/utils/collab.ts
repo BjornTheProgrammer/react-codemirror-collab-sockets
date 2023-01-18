@@ -2,7 +2,7 @@ import { EditorView, ViewPlugin, ViewUpdate } from "@codemirror/view"
 import { StateEffect, Text, ChangeSet } from "@codemirror/state"
 import { Update, receiveUpdates, sendableUpdates, collab, getSyncedVersion } from "@codemirror/collab"
 import { Socket } from "socket.io-client"
-import { cursor, addCursor } from "./cursors" 
+import { cursor, addCursor, removeCursor } from "./cursors" 
 
 function pushUpdates(
 	socket: Socket,
@@ -40,7 +40,7 @@ function pullUpdates(
 			let effects: StateEffect<any>[] = [];
 
 			u.effects.forEach((effect: StateEffect<any>) => {
-				if (effect.value?.id) {
+				if (effect.value?.id && effect.value?.from) {
 					let cursor: cursor = {
 						id: effect.value.id,
 						from: effect.value.from,
@@ -48,6 +48,10 @@ function pullUpdates(
 					}
 
 					effects.push(addCursor.of(cursor))
+				} else if (effect.value?.id) {
+					let cursorId = effect.value.id;
+
+					effects.push(removeCursor.of(cursorId));
 				}
 			})
 
@@ -114,6 +118,8 @@ export const peerExtension = (socket: Socket, startVersion: number, id: string) 
 
 		destroy() { this.done = true }
 	})
+
+	
 	return [
 		collab(
 			{
@@ -121,7 +127,7 @@ export const peerExtension = (socket: Socket, startVersion: number, id: string) 
 				clientID: id,
 				sharedEffects: tr => {
 					const effects = tr.effects.filter(e => {
-						return e.is(addCursor);
+						return e.is(addCursor) || e.is(removeCursor);
 					})
 
 					return effects;

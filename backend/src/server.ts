@@ -1,5 +1,4 @@
 import { Server, Socket } from 'socket.io';
-import { spawn } from 'child_process';
 import * as http from 'http';
 import {ChangeSet, Text} from "@codemirror/state"
 import {Update} from "@codemirror/collab"
@@ -22,19 +21,15 @@ let io = new Server(server, {
 });
 
 // listening for connections from clients
-io.on('connection', (socket: Socket) =>{
-
-	socket.on('ping', () => {
-		socket.emit("pong");
-	})
+io.on('connection', (socket: Socket) => {
 
 	socket.on('pullUpdates', (version: number) => {
 		if (version < updates.length) {
-			socket.emit("pullUpdateResponse", JSON.stringify(updates.slice(version)))
+			socket.emit("pullUpdateResponse", JSON.stringify(updates.slice(version)));
 		} else {
 			pending.push((updates) => { socket.emit('pullUpdateResponse', JSON.stringify(updates.slice(version))) });
 		}
-	})
+	});
 
 	socket.on('pushUpdates', (version, docUpdates) => {
 		docUpdates = JSON.parse(docUpdates);
@@ -46,22 +41,22 @@ io.on('connection', (socket: Socket) =>{
 				for (let update of docUpdates) {
 					// Convert the JSON representation to an actual ChangeSet
 					// instance
-					let changes = ChangeSet.fromJSON(update.changes)
-					updates.push({changes, clientID: update.clientID, effects: update.effects})
-					doc = changes.apply(doc)
+					let changes = ChangeSet.fromJSON(update.changes);
+					updates.push({changes, clientID: update.clientID, effects: update.effects});
+					doc = changes.apply(doc);
 				}
 				socket.emit('pushUpdateResponse', true);
 
-				while (pending.length) pending.pop()!(updates)
+				while (pending.length) pending.pop()!(updates);
 			}
 		} catch (error) {
-			console.error(error)
+			console.error(error);
 		}
-	})
+	});
 
 	socket.on('getDocument', () => {
 		socket.emit('getDocumentResponse', updates.length, doc.toString());
-	})
+	});
 })
 
 
