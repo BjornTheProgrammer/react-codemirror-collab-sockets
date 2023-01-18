@@ -24,10 +24,6 @@ let io = new Server(server, {
 // listening for connections from clients
 io.on('connection', (socket: Socket) =>{
 
-	socket.on('ping', () => {
-		socket.emit("pong");
-	})
-
 	socket.on('pullUpdates', (version: number) => {
 		if (version < updates.length) {
 			socket.emit("pullUpdateResponse", JSON.stringify(updates.slice(version)))
@@ -67,4 +63,3 @@ io.on('connection', (socket: Socket) =>{
 
 const port = process.env.PORT || 8000;
 server.listen(port, () => console.log(`Server listening on port: ${port}`));
-
