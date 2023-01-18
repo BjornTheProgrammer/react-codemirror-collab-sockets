@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import { Component } from "react";
 
 import CodeMirror from '@uiw/react-codemirror';
 import { langs } from '@uiw/codemirror-extensions-langs';
@@ -25,7 +25,7 @@ type props = {
 
 let editorKey = 0;
 
-class EditorElement extends React.Component<props, state> {
+class EditorElement extends Component<props, state> {
 
 	state = {
 		connected: false,

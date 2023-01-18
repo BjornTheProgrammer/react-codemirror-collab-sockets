@@ -9,10 +9,6 @@ const socket = io("http://localhost:8000", {
 
 class App extends React.Component {
 	render() {
-		function edit(name: string) {
-			socket.emit('edit', name)
-		}
-
 		return (
 			<>
 				<h1>Collaberative Codemirror React</h1>
