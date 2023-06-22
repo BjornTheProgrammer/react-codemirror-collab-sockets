@@ -39,9 +39,7 @@ class EditorElement extends Component<props, state> {
 	}
 
 	async componentDidMount() {
-		console.log('mounting')
 		const { version, doc } = await getDocument(this.props.socket, this.state.documentName);
-		console.log('version-doc: ', version, doc);
 
 		this.setState({
 			version,
@@ -61,7 +59,6 @@ class EditorElement extends Component<props, state> {
 		});
 
 		this.props.socket.on('display', async (documentName) => {
-			console.log('display')
 			const { version, doc } = await getDocument(this.props.socket, documentName)
 
 			this.setState({
