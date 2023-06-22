@@ -10,7 +10,7 @@ function pushUpdates(
 	fullUpdates: readonly Update[]
 ): Promise<boolean> {
 	// Strip off transaction data
-	let updates = fullUpdates.map(u => ({
+	const updates = fullUpdates.map(u => ({
 		clientID: u.clientID,
 		changes: u.changes.toJSON(),
 		effects: u.effects
@@ -37,11 +37,11 @@ function pullUpdates(
 		});
 	}).then((updates: any) => updates.map((u: any) => {
 		if (u.effects[0]) {
-			let effects: StateEffect<any>[] = [];
+			const effects: StateEffect<any>[] = [];
 
 			u.effects.forEach((effect: StateEffect<any>) => {
 				if (effect.value?.id && effect.value?.from) {
-					let cursor: cursor = {
+					const cursor: cursor = {
 						id: effect.value.id,
 						from: effect.value.from,
 						to: effect.value.to
@@ -49,7 +49,7 @@ function pullUpdates(
 
 					effects.push(addCursor.of(cursor))
 				} else if (effect.value?.id) {
-					let cursorId = effect.value.id;
+					const cursorId = effect.value.id;
 
 					effects.push(removeCursor.of(cursorId));
 				}
@@ -83,9 +83,7 @@ export function getDocument(socket: Socket): Promise<{version: number, doc: Text
 }
 
 export const peerExtension = (socket: Socket, startVersion: number, id: string) => {
-	let self = this;
-
-	let plugin = ViewPlugin.fromClass(class {
+	const plugin = ViewPlugin.fromClass(class {
 		private pushing = false
 		private done = false
 
@@ -96,11 +94,11 @@ export const peerExtension = (socket: Socket, startVersion: number, id: string) 
 		}
 
 		async push() {
-			let updates = sendableUpdates(this.view.state)
+			const updates = sendableUpdates(this.view.state)
 			if (this.pushing || !updates.length) return
 			this.pushing = true
-			let version = getSyncedVersion(this.view.state)
-			let success = await pushUpdates(socket, version, updates)
+			const version = getSyncedVersion(this.view.state)
+			const success = await pushUpdates(socket, version, updates)
 			this.pushing = false
 			// Regardless of whether the push failed or new updates came in
 			// while it was running, try again if there's updates remaining
@@ -110,8 +108,8 @@ export const peerExtension = (socket: Socket, startVersion: number, id: string) 
 
 		async pull() {
 			while (!this.done) {
-				let version = getSyncedVersion(this.view.state)
-				let updates = await pullUpdates(socket, version)
+				const version = getSyncedVersion(this.view.state)
+				const updates = await pullUpdates(socket, version)
 				this.view.dispatch(receiveUpdates(this.view.state, updates))
 			}
 		}
