@@ -27,8 +27,8 @@ let io = new Server(server, {
 	}
 });
 
-function getDocument(name: string) {
-	if (documents.has(name)) return documents.get(name);
+function getDocument(name: string): document {
+	if (documents.has(name)) return documents.get(name)!;
 
 	const documentContent: document = {
 		updates: [],
