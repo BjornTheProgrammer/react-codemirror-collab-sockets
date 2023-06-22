@@ -1,6 +1,6 @@
 .DS_Store
 
-backend/dist/*
+backend/build/*
 backend/node_modules/*
 backend/yarn.lock
 
