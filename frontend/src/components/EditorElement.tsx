@@ -10,11 +10,14 @@ import { generateName } from "../utils/usernames"
 import { getDocument, peerExtension } from "../utils/collab"
 import { Socket } from "socket.io-client";
 
+type Mode = 'light' | 'dark';
+
 type state = {
 	connected: boolean,
 	version: number | null,
 	documentName: string,
-	doc: null | string
+	doc: null | string,
+	mode:  Mode
 }
 
 type props = {
@@ -30,12 +33,15 @@ class EditorElement extends Component<props, state> {
 		connected: false,
 		version: null,
 		doc: null,
-		documentName: '',
-		username: generateName()
+		documentName: 'default-doc',
+		username: generateName(),
+		mode: window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light' as Mode
 	}
 
 	async componentDidMount() {
+		console.log('mounting')
 		const { version, doc } = await getDocument(this.props.socket, this.state.documentName);
+		console.log('version-doc: ', version, doc);
 
 		this.setState({
 			version,
@@ -55,12 +61,21 @@ class EditorElement extends Component<props, state> {
 		});
 
 		this.props.socket.on('display', async (documentName) => {
+			console.log('display')
 			const { version, doc } = await getDocument(this.props.socket, documentName)
 
 			this.setState({
 				version,
 				doc: doc.toString(),
 				documentName
+			})
+		});
+
+		// Change to dark mode or light mode depending on settings.
+		window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+			const mode = event.matches ? "dark" : "light";
+			this.setState({
+				mode
 			})
 		});
 	}
@@ -85,6 +100,7 @@ class EditorElement extends Component<props, state> {
 					className={`flex-1 overflow-scroll text-left ${this.props.className}`}
 					height="100%"
 					basicSetup={false}
+					theme={ this.state.mode }
 					extensions={[
 						indentUnit.of("\t"),
 						basicSetup(), 
