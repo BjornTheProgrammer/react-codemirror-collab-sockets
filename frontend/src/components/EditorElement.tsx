@@ -4,10 +4,8 @@ import CodeMirror from '@uiw/react-codemirror';
 import { langs } from '@uiw/codemirror-extensions-langs';
 import { basicSetup } from '@uiw/codemirror-extensions-basic-setup';
 import { indentUnit } from '@codemirror/language'
-import { getClientID } from "@codemirror/collab"
-import { EditorView } from "@codemirror/view"
 
-import { cursor, addCursor, cursorExtension } from "../utils/cursors";
+import { cursorExtension } from "../utils/cursors";
 import { generateName } from "../utils/usernames"
 import { getDocument, peerExtension } from "../utils/collab"
 import { Socket } from "socket.io-client";
@@ -16,11 +14,12 @@ type state = {
 	connected: boolean,
 	version: number | null,
 	documentName: string,
-	doc: null | String
+	doc: null | string
 }
 
 type props = {
-	socket: Socket
+	socket: Socket,
+	className?: string
 }
 
 let editorKey = 0;
@@ -83,7 +82,7 @@ class EditorElement extends Component<props, state> {
 			return (
 				<CodeMirror
 					key={editorKey}
-					className="flex-1 overflow-scroll"
+					className={`flex-1 overflow-scroll text-left ${this.props.className}`}
 					height="100%"
 					basicSetup={false}
 					extensions={[

@@ -11,7 +11,7 @@ function pushUpdates(
 	fullUpdates: readonly Update[]
 ): Promise<boolean> {
 	// Strip off transaction data
-	let updates = fullUpdates.map(u => ({
+	const updates = fullUpdates.map(u => ({
 		clientID: u.clientID,
 		changes: u.changes.toJSON(),
 		effects: u.effects
@@ -40,11 +40,11 @@ function pullUpdates(
 		});
 	}).then((updates: any) => updates.map((u: any) => {
 		if (u.effects[0]) {
-			let effects: StateEffect<any>[] = [];
+			const effects: StateEffect<any>[] = [];
 
 			u.effects.forEach((effect: StateEffect<any>) => {
 				if (effect.value?.id) {
-					let cursor: cursor = {
+					const cursor: cursor = {
 						id: effect.value.id,
 						from: effect.value.from,
 						to: effect.value.to
@@ -82,7 +82,7 @@ export function getDocument(socket: Socket, docName: string): Promise<{version: 
 }
 
 export const peerExtension = (socket: Socket, docName: string, startVersion: number, id: string) => {
-	let plugin = ViewPlugin.fromClass(class {
+	const plugin = ViewPlugin.fromClass(class {
 		private pushing = false
 		private done = false
 
@@ -93,10 +93,10 @@ export const peerExtension = (socket: Socket, docName: string, startVersion: num
 		}
 
 		async push() {
-			let updates = sendableUpdates(this.view.state);
+			const updates = sendableUpdates(this.view.state);
 			if (this.pushing || !updates.length) return;
 			this.pushing = true;
-			let version = getSyncedVersion(this.view.state);
+			const version = getSyncedVersion(this.view.state);
 			await pushUpdates(socket, docName, version, updates);
 			this.pushing = false;
 			// Regardless of whether the push failed or new updates came in
@@ -107,9 +107,9 @@ export const peerExtension = (socket: Socket, docName: string, startVersion: num
 
 		async pull() {
 			while (!this.done) {
-				let version = getSyncedVersion(this.view.state)
-				let updates = await pullUpdates(socket, docName, version)
-				let newUpdates = receiveUpdates(this.view.state, updates)
+				const version = getSyncedVersion(this.view.state)
+				const updates = await pullUpdates(socket, docName, version)
+				const newUpdates = receiveUpdates(this.view.state, updates)
 				this.view.dispatch(newUpdates)
 			}
 		}

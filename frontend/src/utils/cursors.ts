@@ -12,8 +12,8 @@ export interface Cursors {
 }
 
 class TooltipWidget extends WidgetType {
-	private name: string = "John";
-	private suffix: string = "";
+	private name = "John";
+	private suffix = "";
 
 	constructor(name: string, color: number) {
 		super();
@@ -22,14 +22,14 @@ class TooltipWidget extends WidgetType {
 	}
 
 	toDOM() {
-		let dom = document.createElement("div");
+		const dom = document.createElement("div");
 		dom.className = "cm-tooltip-none";
 
-		let cursor_tooltip = document.createElement("div");
+		const cursor_tooltip = document.createElement("div");
 		cursor_tooltip.className = `cm-tooltip-cursor cm-tooltip cm-tooltip-above cm-tooltip-${this.suffix}`;
 		cursor_tooltip.textContent = this.name;
 
-		let cursor_tooltip_arrow = document.createElement("div");
+		const cursor_tooltip_arrow = document.createElement("div");
 		cursor_tooltip_arrow.className = "cm-tooltip-arrow";
 
 		cursor_tooltip.appendChild(cursor_tooltip_arrow);
@@ -41,9 +41,9 @@ class TooltipWidget extends WidgetType {
 }
 
 export const addCursor = StateEffect.define<cursor>();
-export const removeCursor = StateEffect.define<String>();
+export const removeCursor = StateEffect.define<string>();
 
-let cursorsItems = new Map<string, number>();
+const cursorsItems = new Map<string, number>();
 
 const cursorField = StateField.define<DecorationSet>({
 	create() {
@@ -51,8 +51,8 @@ const cursorField = StateField.define<DecorationSet>({
 	},
 	update(cursors, tr) {
 		let cursorTransacions = cursors.map(tr.changes)
-		for (let e of tr.effects) if (e.is(addCursor)) {
-			let addUpdates = [];
+		for (const e of tr.effects) if (e.is(addCursor)) {
+			const addUpdates = [];
 			if (!cursorsItems.has(e.value.id)) cursorsItems.set(e.value.id, cursorsItems.size);
 
 			if (e.value.from !== e.value.to) {
@@ -179,14 +179,14 @@ const cursorBaseTheme = EditorView.baseTheme({
 
 })
 
-export function cursorExtension(id: string = "") {
+export function cursorExtension(id = "") {
 	return [
 		cursorField,
 		cursorBaseTheme,
 		EditorView.updateListener.of(update => {
 			update.transactions.forEach(e => { 
 				if (e.selection) {
-					let cursor: cursor = {
+					const cursor: cursor = {
 						id,
 						from: e.selection.ranges[0].from,
 						to: e.selection.ranges[0].to
